@@ -1,12 +1,6 @@
-"""
-RAG Chatbot — University Services (Starter Template)
-Streamlit app kết nối RAG Retrieval (Task 9) và Generation (Task 10).
+"""Interactive Streamlit chatbot for the VinUniversity policy corpus."""
+from __future__ import annotations
 
-Chạy:
-    streamlit run app.py
-"""
-
-import os
 import sys
 from pathlib import Path
 
@@ -14,138 +8,131 @@ import streamlit as st
 from dotenv import load_dotenv
 
 load_dotenv()
-
-# Thêm project root vào sys.path để import các task từ src/
-PROJECT_ROOT = Path(__file__).parent
+PROJECT_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-# =============================================================================
-# PAGE CONFIG
-# =============================================================================
+st.set_page_config(page_title="VinUniversity Policy Assistant", page_icon="🎓", layout="wide", initial_sidebar_state="expanded")
+st.markdown("""
+<style>
+.block-container {max-width: 1100px; padding-top: 2rem;}
+[data-testid="stChatMessage"] {border: 1px solid rgba(120,120,120,.15); border-radius: 14px; padding: .4rem .8rem;}
+.status-card {padding: .75rem 1rem; border-radius: 12px; background: rgba(46,160,67,.10); border: 1px solid rgba(46,160,67,.25);}
+.source-card {padding: .7rem .9rem; margin-bottom: .6rem; border-radius: 10px; background: rgba(128,128,128,.07);}
+</style>
+""", unsafe_allow_html=True)
 
-st.set_page_config(
-    page_title="University Services RAG Chatbot",
-    page_icon="🎓",
-    layout="wide",
-    initial_sidebar_state="expanded",
-)
+if "messages" not in st.session_state: st.session_state.messages = []
+if "pending_query" not in st.session_state: st.session_state.pending_query = None
 
-# =============================================================================
-# SIDEBAR — INFO & SETTINGS
-# =============================================================================
+@st.cache_data(show_spinner=False)
+def indexed_chunk_count() -> int:
+    from src.task4_chunking_indexing import load_index
+    return len(load_index().get("chunks", []))
 
-with st.sidebar:
-    st.title("🎓 University Services RAG")
-    st.caption("Trợ lý hỏi đáp về dịch vụ và chính sách đại học (học phí, học bổng, ký túc xá, thư viện)")
+def queue_suggestion(question: str) -> None:
+    st.session_state.pending_query = question
 
-    st.divider()
-
-    st.subheader("💡 Câu hỏi gợi ý")
-    suggestions = [
-        "Học phí tại RMIT Vietnam là bao nhiêu?",
-        "Làm sao để đặt phòng học nhóm ở thư viện?",
-        "Điều kiện xin học bổng Academic Achievement?",
-        "Dịch vụ hỗ trợ chỗ ở cho sinh viên như thế nào?",
-        "Cách đăng ký học phần qua myRMIT?",
-    ]
-    for s in suggestions:
-        if st.button(s, use_container_width=True, key=f"sug_{s[:20]}"):
-            st.session_state["pending_query"] = s
-
-    st.divider()
-    st.subheader("⚙️ Thiết lập")
-    top_k = st.slider("Số chunks retrieval (top_k)", 3, 10, 5)
-
-    st.divider()
-    st.caption("**Kiến trúc hệ thống:**")
-    st.caption("Hybrid Retrieval (Semantic + BM25) → RRF Rerank → PageIndex Fallback → LLM Generation có Citation")
-
-# =============================================================================
-# SESSION STATE
-# =============================================================================
-
-if "messages" not in st.session_state:
+def clear_chat() -> None:
     st.session_state.messages = []
-if "pending_query" not in st.session_state:
     st.session_state.pending_query = None
 
-# =============================================================================
-# MAIN CHAT AREA
-# =============================================================================
+def unique_sources(sources: list[dict]) -> list[dict]:
+    best = {}
+    for source in sources:
+        name = source.get("metadata", {}).get("source", "Không rõ nguồn")
+        if name not in best or source.get("score", 0) > best[name].get("score", 0): best[name] = source
+    return list(best.values())
 
-st.title("🎓 University Services RAG Chatbot")
-st.caption("Hệ thống hỏi đáp thông tin dịch vụ đại học (Học phí, Học bổng, Ký túc xá, Thư viện)")
+def document_label(filename: str) -> str:
+    labels = {
+        "FW-SAM": "Khung cố vấn sinh viên",
+        "POL-LLR": "Chính sách truy cập và dịch vụ thư viện",
+        "VU_HT03": "Quy định học vụ chương trình đại học chính quy",
+        "VU_CTSV02": "Bộ quy tắc ứng xử sinh viên",
+    }
+    return next((label for marker, label in labels.items() if marker in filename), filename)
 
-# Hiển thị lịch sử chat
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
-        if msg["role"] == "assistant" and "sources" in msg and msg["sources"]:
-            with st.expander(f"📚 Nguồn tham khảo ({len(msg['sources'])} chunks)"):
-                for i, src in enumerate(msg["sources"], 1):
-                    meta = src.get("metadata", {})
-                    source_name = meta.get("source", "Unknown")
-                    doc_type = meta.get("type", "unknown")
-                    score = src.get("score", 0)
-                    st.markdown(f"**[{i}] {source_name}** `{doc_type}` | score: `{score:.4f}`")
-                    st.text(src.get("content", "")[:300] + "...")
-                    st.divider()
+def render_sources(sources: list[dict], answer: str = "") -> None:
+    documents = unique_sources(sources)
+    cited = [item for item in documents if document_label(item.get("metadata", {}).get("source", "")) in answer]
+    if cited: documents = cited
+    if not documents: return
+    with st.expander(f"📚 Nguồn đã sử dụng ({len(documents)} tài liệu)"):
+        for index, source in enumerate(documents, 1):
+            metadata = source.get("metadata", {})
+            filename = metadata.get("source", "Không rõ nguồn")
+            name = document_label(filename)
+            cosine = float(source.get("cosine_score", 0))
+            year = metadata.get("year", "không rõ năm")
+            section = metadata.get("section", "Không rõ mục")
+            evidence = source.get("evidence_vi") or "Đã tìm thấy nội dung liên quan trong tài liệu gốc; không hiển thị đoạn tiếng Anh thô để giữ giao diện thống nhất tiếng Việt."
+            score_label = f"Chỉ số tương đồng cosine: {cosine:.3f} · " if cosine else ""
+            st.markdown(f"<div class='source-card'><b>{index}. {name} ({year})</b><br><b>{section}</b><br><small>{score_label}Tệp gốc: {filename}</small><br><br><b>Bằng chứng:</b> {evidence}</div>", unsafe_allow_html=True)
+            excerpt = source.get("excerpt")
+            if excerpt:
+                st.caption("Đoạn truy hồi gốc (cụm liên quan được tô đậm):")
+                st.markdown(f"> {excerpt}")
 
-# =============================================================================
-# QUERY HANDLING
-# =============================================================================
+SUGGESTIONS = [
+    "Mô hình cố vấn sinh viên tại VinUniversity gồm những vai trò nào?",
+    "Sinh viên đại học được mượn bao nhiêu sách và trong bao lâu?",
+    "Trách nhiệm của người được cố vấn là gì?",
+    "Quy định học vụ áp dụng cho đối tượng nào?",
+    "Bộ quy tắc ứng xử cấm những hành vi nào?",
+]
 
-# Xử lý khi bấm nút gợi ý hoặc nhập câu hỏi mới
-user_input = st.chat_input("Nhập câu hỏi của bạn về chính sách/dịch vụ đại học...")
-query = user_input or st.session_state.pending_query
+with st.sidebar:
+    st.title("🎓 Trợ lý Chính sách VinUni")
+    st.caption("Tra cứu 4 tài liệu: cố vấn sinh viên, thư viện, quy định học vụ và quy tắc ứng xử.")
+    from src.task10_generation import reasoning_model_available
+    if reasoning_model_available():
+        status="🟢 AI suy luận đang hoạt động"
+        detail=f"RAG ngữ nghĩa · {indexed_chunk_count()} đoạn dữ liệu"
+    else:
+        status="🟠 Chưa kết nối mô hình AI"
+        detail=f"Đang dùng chế độ dự phòng · {indexed_chunk_count()} đoạn dữ liệu"
+    st.markdown(f"<div class='status-card'>{status}<br><small>{detail}</small></div>", unsafe_allow_html=True)
+    st.divider(); st.subheader("💡 Câu hỏi gợi ý")
+    for index, suggestion in enumerate(SUGGESTIONS):
+        st.button(suggestion, key=f"suggestion_{index}", use_container_width=True, on_click=queue_suggestion, args=(suggestion,))
+    st.divider()
+    top_k = st.slider("Số đoạn bằng chứng", 3, 8, 5, help="Nhiều đoạn hơn tăng độ bao phủ nhưng có thể thêm nhiễu.")
+    st.button("🗑️ Xóa cuộc trò chuyện", use_container_width=True, on_click=clear_chat)
+    st.caption("Muốn suy luận ngữ nghĩa, hãy cấu hình OPENAI_API_KEY hoặc OPENROUTER_API_KEY trong tệp .env.")
+
+st.title("🎓 Trợ lý Chính sách VinUniversity")
+st.caption("Đặt câu hỏi bằng tiếng Việt. Mọi câu trả lời đều đi kèm tài liệu nguồn.")
+prompt = st.chat_input("Ví dụ: Sinh viên đại học được mượn sách trong bao lâu?")
+query = prompt or st.session_state.pending_query
 
 if query:
     st.session_state.pending_query = None
-
-    # Hiển thị câu hỏi của user
+    history = list(st.session_state.messages)
     st.session_state.messages.append({"role": "user", "content": query})
-    with st.chat_message("user"):
-        st.markdown(query)
+    try:
+        from src.task10_generation import generate_with_citation
+        with st.spinner("Đang tìm bằng chứng trong 4 tài liệu VinUniversity…"):
+            response = generate_with_citation(query, top_k=top_k, conversation_history=history)
+        st.session_state.messages.append({"role": "assistant", "content": response.get("answer") or "Hệ thống chưa tạo được câu trả lời.", "sources": response.get("sources", []),
+                                          "intent_label": response.get("intent_label","Chưa xác định"), "confidence": response.get("confidence",0),
+                                          "evidence_count": response.get("evidence_count",0), "error_type": response.get("error_type")})
+    except Exception as exc:
+        st.session_state.messages.append({"role": "assistant", "content": "Hệ thống đang gặp lỗi kỹ thuật khi xử lý yêu cầu. Vui lòng thử lại sau.", "sources": [],
+                                          "intent_label":"Lỗi hệ thống", "confidence":0, "evidence_count":0, "error_type":"system_error"})
+    st.rerun()
 
-    # Sinh câu trả lời từ RAG Pipeline
-    with st.chat_message("assistant"):
-        with st.spinner("Đang tìm kiếm tài liệu và tổng hợp câu trả lời..."):
-            try:
-                # TODO (Học viên): Tích hợp hàm sinh câu trả lời từ Task 10
-                # Ví dụ:
-                # from src.task10_generation import generate_with_citation
-                # response = generate_with_citation(query, top_k=top_k)
-                # answer = response["answer"]
-                # sources = response.get("sources", [])
+if not st.session_state.messages:
+    st.info("Chọn một câu hỏi gợi ý ở thanh bên hoặc nhập câu hỏi của bạn ở ô phía dưới.")
 
-                # Tạm thời mockup để test UI:
-                from src.task10_generation import generate_with_citation
-                response = generate_with_citation(query, top_k=top_k)
-                answer = response.get("answer", "Chưa thể trả lời.")
-                sources = response.get("sources", [])
-
-            except NotImplementedError:
-                answer = "⚠️ **Task 10 chưa được implement.** Hãy hoàn thành `src/task10_generation.py` để kết nối pipeline vào UI!"
-                sources = []
-            except Exception as e:
-                answer = f"❌ **Lỗi khi chạy RAG Pipeline:** {e}"
-                sources = []
-
-            st.markdown(answer)
-
-            if sources:
-                with st.expander(f"📚 Nguồn tham khảo ({len(sources)} chunks)"):
-                    for i, src in enumerate(sources, 1):
-                        meta = src.get("metadata", {})
-                        source_name = meta.get("source", "Unknown")
-                        doc_type = meta.get("type", "unknown")
-                        score = src.get("score", 0)
-                        st.markdown(f"**[{i}] {source_name}** `{doc_type}` | score: `{score:.4f}`")
-                        st.text(src.get("content", "")[:300] + "...")
-                        st.divider()
-
-    st.session_state.messages.append({
-        "role": "assistant",
-        "content": answer,
-        "sources": sources,
-    })
+for message in st.session_state.messages:
+    avatar = "🧑‍🎓" if message["role"] == "user" else "🤖"
+    with st.chat_message(message["role"], avatar=avatar):
+        st.markdown(message["content"])
+        if message["role"] == "assistant":
+            confidence=message.get("confidence")
+            evidence_count=message.get("evidence_count",len(message.get("sources",[])))
+            meta=[f"Phân loại: {message.get('intent_label','Chưa xác định')}"]
+            if confidence:meta.append(f"Độ tin cậy: {confidence}%")
+            if evidence_count:meta.append(f"Dựa trên {evidence_count} đoạn tài liệu")
+            st.caption(" · ".join(meta))
+            render_sources(message.get("sources", []), message.get("content", ""))

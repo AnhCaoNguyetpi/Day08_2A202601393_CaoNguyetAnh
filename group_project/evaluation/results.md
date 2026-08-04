@@ -1,56 +1,26 @@
 # RAG Evaluation Results
 
-## Framework sử dụng
+## Overall scores
 
-> Ghi rõ framework đã chọn: DeepEval / RAGAS / TruLens
+| Metric | Score |
+|---|---:|
+| Faithfulness | 0.001 |
+| Answer Relevance | 0.007 |
+| Context Recall | 1.000 |
+| Context Precision | 0.973 |
 
----
+## A/B comparison
 
-## Overall Scores
+| Configuration | Faithfulness | Answer relevance | Context recall | Context precision |
+|---|---:|---:|---:|---:|
+| hybrid_rerank | 0.001 | 0.007 | 1.000 | 0.973 |
+| hybrid_no_rerank | 0.001 | 0.007 | 1.000 | 0.933 |
 
-| Metric | Config A (hybrid + rerank) | Config B (dense-only) | Δ |
-|--------|---------------------------|----------------------|---|
-| Faithfulness | | | |
-| Answer Relevance | | | |
-| Context Recall | | | |
-| Context Precision | | | |
-| **Average** | | | |
-
----
-
-## A/B Comparison Analysis
-
-**Config A:**
-> Mô tả config ...
-
-**Config B:**
-> Mô tả config ...
-
-**Kết luận:**
-> Config nào tốt hơn? Vì sao? (2-3 câu)
-
----
-
-## Worst Performers (Bottom 3)
-
-| # | Question | Faithfulness | Relevance | Recall | Failure Stage | Root Cause |
-|---|----------|-------------|-----------|--------|---------------|------------|
-| 1 | | | | | | |
-| 2 | | | | | | |
-| 3 | | | | | | |
-
----
+## Worst performers
+- What are the five principles of excellent advising at VinUniversity? — relevance 0.000
+- Which three roles form the hybrid advising model? — relevance 0.000
+- What is the typical Faculty Advisor advisee ratio? — relevance 0.000
 
 ## Recommendations
 
-### Cải tiến 1
-**Action:**
-**Expected impact:**
-
-### Cải tiến 2
-**Action:**
-**Expected impact:**
-
-### Cải tiến 3
-**Action:**
-**Expected impact:**
+Improve Vietnamese/English multilingual embeddings, expand source coverage, and calibrate the cosine fallback threshold on labelled relevant and irrelevant queries.

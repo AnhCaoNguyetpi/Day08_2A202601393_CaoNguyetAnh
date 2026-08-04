@@ -1,17 +1,17 @@
 [
-  {
-    "question": "Học phí hàng năm của chương trình Business tại RMIT Vietnam là bao nhiêu?",
-    "expected_answer": "Khoảng 375.840.000 VND mỗi năm (tùy chương trình cụ thể).",
-    "expected_context": "Trang Tuition Fees, mục Undergraduate Programs"
-  },
-  {
-    "question": "Học phí được thanh toán theo hình thức nào?",
-    "expected_answer": "Thanh toán theo từng học kỳ, tính theo từng môn học đã đăng ký.",
-    "expected_context": "Trang Tuition Fees, mục Payment Structure"
-  },
-  {
-    "question": "Trường có cung cấp ký túc xá trong khuôn viên không?",
-    "expected_answer": "Không — trường không cung cấp chỗ ở trong khuôn viên, nhưng có đội ngũ hỗ trợ sinh viên tìm chỗ ở gần trường.",
-    "expected_context": "Trang Accommodation Services"
-  }
+ {"question":"What are the five principles of excellent advising at VinUniversity?","expected_answer":"Inclusive, Relational, Intentional, Scholarly, and Empowering advising.","expected_context":"FW-SAM-001-V2.0_Student-Advising-Framework_20250903.md"},
+ {"question":"Which three roles form the hybrid advising model?","expected_answer":"Faculty Advisor, Professional Advisor, and Peer Advisor.","expected_context":"FW-SAM-001-V2.0_Student-Advising-Framework_20250903.md"},
+ {"question":"What is the typical Faculty Advisor advisee ratio?","expected_answer":"Each Faculty Advisor typically supports 10 to 20 students.","expected_context":"FW-SAM-001-V2.0_Student-Advising-Framework_20250903.md"},
+ {"question":"Who selects and assigns Peer Advisors?","expected_answer":"Student Affairs Management (SAM).","expected_context":"FW-SAM-001-V2.0_Student-Advising-Framework_20250903.md"},
+ {"question":"How long is a peer advising relationship active?","expected_answer":"At least the first semester, with optional continuation.","expected_context":"FW-SAM-001-V2.0_Student-Advising-Framework_20250903.md"},
+ {"question":"What must library users show when requested?","expected_answer":"A valid VinUniversity ID.","expected_context":"POL-LLR-001-V4.0_Library-Access-Services-Policy_9.7.2025_Clean.md"},
+ {"question":"Who may use VinUni library resources and facilities?","expected_answer":"VinUni members, subject to the library access policy.","expected_context":"POL-LLR-001-V4.0_Library-Access-Services-Policy_9.7.2025_Clean.md"},
+ {"question":"How many items can undergraduate students borrow and for how long?","expected_answer":"Three items for two weeks, with one renewal.","expected_context":"POL-LLR-001-V4.0_Library-Access-Services-Policy_9.7.2025_Clean.md"},
+ {"question":"When must loans be returned before leaving VinUni?","expected_answer":"All loans must be returned and fines paid at least one month before leaving.","expected_context":"POL-LLR-001-V4.0_Library-Access-Services-Policy_9.7.2025_Clean.md"},
+ {"question":"Can a loan be renewed when another user requested the item?","expected_answer":"No; renewal is allowed only if no one else requested the item.","expected_context":"POL-LLR-001-V4.0_Library-Access-Services-Policy_9.7.2025_Clean.md"},
+ {"question":"To whom do the full-time undergraduate academic regulations apply?","expected_answer":"All VinUniversity full-time undergraduate students and relevant academic units.","expected_context":"VU_HT03.EN_Academic-Regulations-For-Full-Time-Undergraduate-Programs.md"},
+ {"question":"What is the minimum semester registration load stated in the 2024 revision?","expected_answer":"The revision states a minimum of 12 credits for one semester for full-time undergraduate students.","expected_context":"VU_HT03.EN_Academic-Regulations-For-Full-Time-Undergraduate-Programs.md"},
+ {"question":"Which areas are governed by the undergraduate academic regulations?","expected_answer":"Enrolment, credits, assessment, academic standing, progression, and graduation among other procedures.","expected_context":"VU_HT03.EN_Academic-Regulations-For-Full-Time-Undergraduate-Programs.md"},
+ {"question":"Who issued the Student Code of Conduct dated 24 December 2025?","expected_answer":"VinUniversity issued the Student Code of Conduct.","expected_context":"VU_CTSV02_Student-Code-of-Conduct_24.12.2025.md"},
+ {"question":"Who can access the Student Code of Conduct?","expected_answer":"All VinUni staff, faculty, and students.","expected_context":"VU_CTSV02_Student-Code-of-Conduct_24.12.2025.md"}
 ]

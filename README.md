@@ -27,7 +27,7 @@ Xây dựng một RAG pipeline thực tế, end-to-end, từ thu thập dữ li�
 
 **Chính sách/quy định dịch vụ đại học** (học phí, học bổng, ký túc xá, đăng ký học phần) + **Thông tin/thông báo đại học** (sự kiện, dịch vụ thư viện, hỗ trợ sinh viên)
 
-Dữ liệu mẫu trong repo được crawl thật từ trang công khai của **RMIT Vietnam** (rmit.edu.vn) — xem chi tiết URL nguồn trong `src/task1_collect_legal_docs.py` và `src/task2_crawl_news.py`.
+Dữ liệu hiện tại gồm **4 tài liệu chính thức của VinUniversity** do người dùng cung cấp: Student Advising Framework, Library Access & Services Policy, Academic Regulations for Full-Time Undergraduate Programs và Student Code of Conduct. `src/task1_collect_legal_docs.py` xác thực các PDF; `src/task2_crawl_news.py` chỉ tạo các record dẫn xuất từ chính bốn tài liệu này để giữ tương thích với cấu trúc bài lab.
 
 ---
 
@@ -73,23 +73,23 @@ K3-Day08-RAG-Pipeline-Starter/
 
 Tìm và tải về **tối thiểu 3 văn bản chính sách/quy định** dạng PDF/DOCX về dịch vụ đại học (học phí, học bổng, ký túc xá, đăng ký học phần). Lưu vào `data/landing/`.
 
-**Gợi ý nguồn** (ví dụ trang công khai RMIT Vietnam):
-- Học phí & phương thức thanh toán (Tuition Fees)
-- Chính sách học bổng (Scholarship eligibility)
-- Quy định ký túc xá / hỗ trợ chỗ ở (Accommodation Services)
-- Cổng đăng ký học phần (Course Registration Portal)
+**Nguồn dữ liệu hiện tại** (VinUniversity):
+- Student Advising Framework (FW-SAM-001-V2.0)
+- Library Access & Services Policy (POL-LLR-001-V4.0)
+- Academic Regulations for Full-Time Undergraduate Programs (VU_HT03.EN)
+- Student Code of Conduct (VU_CTSV02.EN)
 
 **Yêu cầu:**
 - Lưu file gốc (PDF/DOCX) vào `data/landing/legal/`
-- Đặt tên file rõ ràng: `tuition-fees-rmit.pdf`, `academic-achievement-scholarship-rmit.pdf`, ...
+- Giữ nguyên mã hiệu và phiên bản trong tên file VinUniversity để citation có thể truy vết.
 
 ---
 
 ### Task 2 — Crawl Bài Viết/Thông Báo
 
-Crawl **tối thiểu 5 bài viết** về thông tin/thông báo dịch vụ đại học (sự kiện, thư viện, hỗ trợ sinh viên, học bổng).
+Để tương thích với cấu trúc bài lab, tạo **5 JSON record dẫn xuất** từ bốn PDF VinUniversity. Không crawl hoặc trộn thêm nguồn bên ngoài vào knowledge base.
 
-**Thư viện khuyến nghị:** [Crawl4AI](https://github.com/unclecode/crawl4ai)
+Các record này chỉ là manifest/tóm tắt phục vụ landing-zone contract; citation cuối cùng vẫn trỏ về PDF gốc.
 
 **Yêu cầu:**
 - Lưu output vào `data/landing/news/`
@@ -125,11 +125,11 @@ from markitdown import MarkItDown
 md = MarkItDown()
 
 # Convert PDF
-result = md.convert("data/landing/legal/tuition-fees-rmit.pdf")
+result = md.convert("data/landing/legal/FW-SAM-001-V2.0_Student-Advising-Framework_20250903.pdf")
 print(result.text_content)
 
 # Convert DOCX
-result = md.convert("data/landing/legal/academic-achievement-scholarship-rmit.docx")
+result = md.convert("data/landing/legal/VU_HT03.EN_Academic-Regulations-For-Full-Time-Undergraduate-Programs.pdf")
 ```
 
 **Lưu ý:** MarkItDown cần cài thêm extra `pip install "markitdown[pdf]"` để convert được file
@@ -138,7 +138,7 @@ PDF — nếu chỉ `pip install markitdown` sẽ báo lỗi `MissingDependencyE
 **Yêu cầu:**
 - Output lưu vào `data/standardized/`
 - Giữ nguyên cấu trúc thư mục con (`legal/`, `news/`)
-- Mỗi file output có tên tương ứng: `tuition-fees-rmit.md`
+- Mỗi file output giữ tên tương ứng, ví dụ `FW-SAM-001-V2.0_Student-Advising-Framework_20250903.md`
 
 ---
 

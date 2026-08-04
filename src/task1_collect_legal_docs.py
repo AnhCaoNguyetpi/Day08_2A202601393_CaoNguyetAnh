@@ -1,54 +1,26 @@
-"""
-Task 1 — Thu thập văn bản chính sách/quy định dịch vụ đại học.
-
-Hướng dẫn:
-    1. Tìm tối thiểu 3 văn bản chính sách (PDF/DOCX) từ trang công khai của một trường đại học.
-    2. Tải về và lưu vào data/landing/legal/
-    3. Đặt tên file rõ ràng, không dấu, mô tả đúng nội dung.
-
-Gợi ý nguồn (ví dụ trang công khai RMIT Vietnam — rmit.edu.vn):
-    - https://www.rmit.edu.vn/study-at-rmit/tuition-fees
-    - https://www.rmit.edu.vn/study-at-rmit/scholarships/...
-    - https://www.rmit.edu.vn/students/my-studies/fees-and-payments
-
-Gợi ý văn bản (chủ đề dịch vụ đại học):
-    - Học phí & phương thức thanh toán (Tuition Fees)
-    - Chính sách học bổng (Scholarship eligibility)
-    - Quy định ký túc xá / hỗ trợ chỗ ở (Accommodation Services)
-    - Hướng dẫn đăng ký học phần qua cổng thông tin sinh viên (Course Registration)
-
-Lưu ý: một số trang trường (vd VinUni, Fulbright) chặn bot crawler mặc định (HTTP 403) —
-không phải lỗi của bạn, đó là cấu hình WAF/Cloudflare phía server. Đổi sang trang khác
-thay vì cố vượt qua, và chỉ dùng nguồn công khai/được phép chia sẻ.
-"""
-
+"""Task 1: validate the four VinUniversity policy documents in the landing zone."""
 from pathlib import Path
 
-DATA_DIR = Path(__file__).parent.parent / "data" / "landing" / "legal"
+DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "landing" / "legal"
+DOCUMENTS = (
+    "FW-SAM-001-V2.0_Student-Advising-Framework_20250903.pdf",
+    "POL-LLR-001-V4.0_Library-Access-Services-Policy_9.7.2025_Clean.pdf",
+    "VU_HT03.EN_Academic-Regulations-For-Full-Time-Undergraduate-Programs.pdf",
+    "VU_CTSV02_Student-Code-of-Conduct_24.12.2025.pdf",
+)
 
-
-def setup_directory():
-    """Tạo thư mục data/landing/legal/ nếu chưa có."""
+def setup_directory() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"✓ Thư mục đã sẵn sàng: {DATA_DIR}")
 
-
-# TODO: Tải file PDF/DOCX về DATA_DIR
-# Có thể tải thủ công hoặc viết script download nếu có direct link.
-#
-# Ví dụ nếu có direct link:
-#
-# import requests
-#
-# def download_file(url: str, filename: str):
-#     response = requests.get(url)
-#     filepath = DATA_DIR / filename
-#     filepath.write_bytes(response.content)
-#     print(f"✓ Đã tải: {filepath}")
-#
-# Nếu trang là HTML thuần (không phải PDF sẵn), có thể convert nội dung text
-# thành PDF đơn giản bằng thư viện fpdf2 (đã có trong requirements.txt).
-
+def collect_documents() -> list[Path]:
+    """Return validated bundled documents; never fabricate or download substitutes."""
+    setup_directory()
+    paths = [DATA_DIR / name for name in DOCUMENTS]
+    missing = [str(path) for path in paths if not path.exists() or path.stat().st_size <= 1024]
+    if missing:
+        raise FileNotFoundError("Missing/invalid VinUniversity PDFs: " + ", ".join(missing))
+    return paths
 
 if __name__ == "__main__":
-    setup_directory()
+    for document in collect_documents():
+        print(f"Validated: {document.name} ({document.stat().st_size:,} bytes)")
